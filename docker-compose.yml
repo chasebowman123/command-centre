@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  command-centre:
+    build: .
+    container_name: command-centre
+    restart: unless-stopped
+    ports:
+      - "3000:5000"
+    volumes:
+      - command-centre-data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/data/data.db
+
+volumes:
+  command-centre-data:
