@@ -23,8 +23,6 @@ COPY --from=builder /app/dist ./dist
 
 # Data directory for SQLite persistence
 RUN mkdir -p /app/data
-VOLUME /app/data
-
 # Set DB path to /app/data so it persists across container restarts
 ENV DATABASE_URL=/app/data/data.db
 ENV NODE_ENV=production
