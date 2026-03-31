@@ -28,24 +28,35 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Dashboard content */}
+      {/* Dashboard content — 2-column: main content left, Key Links right */}
       <main className="flex-1 overflow-y-auto px-4 md:px-5 pb-6">
-        <div className="max-w-[1800px] mx-auto space-y-4">
+        <div className="max-w-[1800px] mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-          {/* === ROW 1: Weather (full width, top) === */}
-          <WeatherPanel />
+            {/* === LEFT COLUMN (9 cols) — all main content === */}
+            <div className="lg:col-span-9 space-y-4">
+              {/* Weather */}
+              <WeatherPanel />
 
-          {/* === ROW 2: Mini Charts (full width, 3x2 grid handled internally) === */}
-          <MiniCharts />
+              {/* Calendar + Tasks side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CalendarPanel />
+                <TasksPanel />
+              </div>
 
-          {/* === ROW 3: Portfolio (full width) === */}
-          <PortfolioPanel />
+              {/* Mini Charts */}
+              <MiniCharts />
 
-          {/* === ROW 4: Calendar + Tasks + Key Links — three columns side by side === */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <CalendarPanel />
-            <TasksPanel />
-            <KeyLinksPanel />
+              {/* Portfolio */}
+              <PortfolioPanel />
+            </div>
+
+            {/* === RIGHT COLUMN (3 cols) — Key Links spanning full height === */}
+            <div className="lg:col-span-3">
+              <div className="lg:sticky lg:top-4">
+                <KeyLinksPanel />
+              </div>
+            </div>
           </div>
         </div>
 

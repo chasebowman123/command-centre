@@ -32,7 +32,7 @@ const RANGE_MAP: Record<string, string> = {
 };
 
 function MiniChart({ symbol, label }: { symbol: string; label: string }) {
-  const [range, setRange] = useState<string>("1M");
+  const [range, setRange] = useState<string>("1D");
 
   const { data: history = [] } = useQuery<{ date: string; close: number }[]>({
     queryKey: ["/api/history", symbol, range],
