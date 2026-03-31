@@ -1,6 +1,8 @@
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
+import { PensionsPanel } from "@/components/PensionsPanel";
+import { PropertyPanel } from "@/components/PropertyPanel";
 import { WeatherPanel } from "@/components/WeatherPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
 import { MiniCharts } from "@/components/MiniCharts";
@@ -49,6 +51,12 @@ export default function Dashboard() {
 
               {/* Portfolio */}
               <PortfolioPanel />
+
+              {/* Pensions & Property side by side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <PensionsPanel />
+                <PropertyPanel />
+              </div>
             </div>
 
             {/* === RIGHT COLUMN (3 cols) — Key Links spanning full height === */}

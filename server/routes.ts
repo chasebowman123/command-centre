@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertHoldingSchema, insertTaskSchema } from "@shared/schema";
+import { insertHoldingSchema, insertTaskSchema, insertPensionFundSchema, insertPropertySchema } from "@shared/schema";
 
 // yahoo-finance2 v3 — lazy dynamic import (avoids CJS/ESM issues with tsx)
 let yf: any = null;
@@ -288,6 +288,70 @@ export async function registerRoutes(
     }
   });
 
+  // === PENSION FUNDS CRUD ===
+  app.get("/api/pensions", (_req, res) => {
+    res.json(storage.getPensionFunds());
+  });
+
+  app.post("/api/pensions", (req, res) => {
+    const parsed = insertPensionFundSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
+    res.json(storage.createPensionFund(parsed.data));
+  });
+
+  app.patch("/api/pensions/:id", (req, res) => {
+    const id = Number(req.params.id);
+    const p = storage.updatePensionFund(id, req.body);
+    if (!p) return res.status(404).json({ error: "Not found" });
+    res.json(p);
+  });
+
+  app.delete("/api/pensions/:id", (req, res) => {
+    storage.deletePensionFund(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // === PROPERTIES CRUD ===
+  app.get("/api/properties", (_req, res) => {
+    res.json(storage.getProperties());
+  });
+
+  app.post("/api/properties", (req, res) => {
+    const parsed = insertPropertySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
+    res.json(storage.createProperty(parsed.data));
+  });
+
+  app.patch("/api/properties/:id", (req, res) => {
+    const id = Number(req.params.id);
+    const p = storage.updateProperty(id, req.body);
+    if (!p) return res.status(404).json({ error: "Not found" });
+    res.json(p);
+  });
+
+  app.delete("/api/properties/:id", (req, res) => {
+    storage.deleteProperty(Number(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // === GBP/AUD exchange rate (for Australian Super) ===
+  app.get("/api/fx", async (req, res) => {
+    try {
+      const pair = (req.query.pair as string) || "AUDGBP=X";
+      const yfClient = await getYf();
+      const cached = yfCache[pair];
+      if (cached && Date.now() - cached.ts < 60000) return res.json(cached.data);
+      const q = await yfClient.quote(pair);
+      const rate = q?.regularMarketPrice ?? 0;
+      const result = { pair, rate };
+      yfCache[pair] = { data: result, ts: Date.now() };
+      res.json(result);
+    } catch (err: any) {
+      console.error("FX error:", err.message);
+      res.json({ pair: req.query.pair, rate: 0 });
+    }
+  });
+
   // === SEED DEFAULT HOLDINGS (if empty) ===
   const existing = storage.getHoldings();
   if (existing.length === 0) {
@@ -295,6 +359,39 @@ export async function registerRoutes(
     storage.createHolding({ ticker: "FNMA", name: "Fannie Mae", quantity: 6000, avgPrice: 7.26, assetType: "stock" });
     storage.createHolding({ ticker: "LITE", name: "Lumentum Holdings", quantity: -334, avgPrice: 727, assetType: "stock" });
     storage.createHolding({ ticker: "SPX6900-USD", name: "SPX6900", quantity: 109422, avgPrice: 0.2258, assetType: "crypto" });
+  }
+
+  // === SEED DEFAULT PENSION FUNDS (if empty) ===
+  const existingPensions = storage.getPensionFunds();
+  if (existingPensions.length === 0) {
+    const sjpFunds = [
+      { provider: "SJP", fundName: "Intl Equity Pn Acc", isin: "GB0030964596", currentValue: 21120, allocation: 16, currency: "GBP" },
+      { provider: "SJP", fundName: "Continental Euro Pn Acc", isin: "GB0007511156", currentValue: 18566, allocation: 14, currency: "GBP" },
+      { provider: "SJP", fundName: "UK Pn Acc", isin: "GB0032680323", currentValue: 18013, allocation: 14, currency: "GBP" },
+      { provider: "SJP", fundName: "Sust & Resp Equity Pn Acc", isin: "GB0004435862", currentValue: 17592, allocation: 13, currency: "GBP" },
+      { provider: "SJP", fundName: "Emerg Mkts Equity Pn Acc", isin: "GB00BKX5CC71", currentValue: 17111, allocation: 13, currency: "GBP" },
+      { provider: "SJP", fundName: "North American Pn Acc", isin: "GB0007511594", currentValue: 16679, allocation: 13, currency: "GBP" },
+      { provider: "SJP", fundName: "Asia Pacific Pn Acc", isin: "GB0007510745", currentValue: 16244, allocation: 12, currency: "GBP" },
+      { provider: "SJP", fundName: "Polaris 4 Pn Acc", isin: "GB0008401431", currentValue: 5907, allocation: 5, currency: "GBP" },
+    ];
+    for (const f of sjpFunds) {
+      storage.createPensionFund(f);
+    }
+    storage.createPensionFund({ provider: "AustralianSuper", fundName: "AustralianSuper", isin: null, currentValue: 171000, allocation: null, currency: "AUD" });
+  }
+
+  // === SEED DEFAULT PROPERTY (if empty) ===
+  const existingProps = storage.getProperties();
+  if (existingProps.length === 0) {
+    storage.createProperty({
+      name: "Lancaster Gate",
+      address: "Flat 1, 46 Lancaster Gate",
+      postcode: "W2 3NA",
+      purchasePrice: 1660000,
+      currentValue: 1900000,
+      mortgageBalance: 1254000,
+      currency: "GBP",
+    });
   }
 
   return httpServer;

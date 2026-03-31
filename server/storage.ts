@@ -1,6 +1,12 @@
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
-import { holdings, tasks, type Holding, type InsertHolding, type Task, type InsertTask } from "@shared/schema";
+import {
+  holdings, tasks, pensionFunds, properties,
+  type Holding, type InsertHolding,
+  type Task, type InsertTask,
+  type PensionFund, type InsertPensionFund,
+  type Property, type InsertProperty,
+} from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const dbPath = process.env.DATABASE_URL || "data.db";
@@ -18,6 +24,16 @@ export interface IStorage {
   createTask(data: InsertTask): Task;
   updateTask(id: number, data: Partial<InsertTask>): Task | undefined;
   deleteTask(id: number): void;
+  // Pension Funds
+  getPensionFunds(): PensionFund[];
+  createPensionFund(data: InsertPensionFund): PensionFund;
+  updatePensionFund(id: number, data: Partial<InsertPensionFund>): PensionFund | undefined;
+  deletePensionFund(id: number): void;
+  // Properties
+  getProperties(): Property[];
+  createProperty(data: InsertProperty): Property;
+  updateProperty(id: number, data: Partial<InsertProperty>): Property | undefined;
+  deleteProperty(id: number): void;
 }
 
 class SqliteStorage implements IStorage {
@@ -53,6 +69,40 @@ class SqliteStorage implements IStorage {
 
   deleteTask(id: number): void {
     db.delete(tasks).where(eq(tasks.id, id)).run();
+  }
+
+  // === Pension Funds ===
+  getPensionFunds(): PensionFund[] {
+    return db.select().from(pensionFunds).all();
+  }
+
+  createPensionFund(data: InsertPensionFund): PensionFund {
+    return db.insert(pensionFunds).values(data).returning().get()!;
+  }
+
+  updatePensionFund(id: number, data: Partial<InsertPensionFund>): PensionFund | undefined {
+    return db.update(pensionFunds).set(data).where(eq(pensionFunds.id, id)).returning().get();
+  }
+
+  deletePensionFund(id: number): void {
+    db.delete(pensionFunds).where(eq(pensionFunds.id, id)).run();
+  }
+
+  // === Properties ===
+  getProperties(): Property[] {
+    return db.select().from(properties).all();
+  }
+
+  createProperty(data: InsertProperty): Property {
+    return db.insert(properties).values(data).returning().get()!;
+  }
+
+  updateProperty(id: number, data: Partial<InsertProperty>): Property | undefined {
+    return db.update(properties).set(data).where(eq(properties.id, id)).returning().get();
+  }
+
+  deleteProperty(id: number): void {
+    db.delete(properties).where(eq(properties.id, id)).run();
   }
 }
 
