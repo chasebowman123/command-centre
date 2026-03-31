@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertHoldingSchema, insertTaskSchema, insertPensionFundSchema, insertPropertySchema } from "@shared/schema";
+import * as fs from "fs";
+import * as path from "path";
 
 // yahoo-finance2 v3 — lazy dynamic import (avoids CJS/ESM issues with tsx)
 let yf: any = null;
@@ -379,6 +381,52 @@ export async function registerRoutes(
     }
     storage.createPensionFund({ provider: "AustralianSuper", fundName: "AustralianSuper", isin: null, currentValue: 171000, allocation: null, currency: "AUD" });
   }
+
+  // === TV SHOWS (file-based, updated by external cron agent) ===
+  // Use /app/data on Railway/Docker where that mount exists, otherwise use local data/
+  const tvShowsDir = (process.env.NODE_ENV === "production" && fs.existsSync("/app")) ? "/app/data" : path.join(process.cwd(), "data");
+  const tvShowsFile = path.join(tvShowsDir, "tv-shows.json");
+
+  // Ensure data directory exists
+  if (!fs.existsSync(tvShowsDir)) {
+    fs.mkdirSync(tvShowsDir, { recursive: true });
+  }
+
+  app.get("/api/tv-shows", (_req, res) => {
+    try {
+      if (fs.existsSync(tvShowsFile)) {
+        const raw = fs.readFileSync(tvShowsFile, "utf-8");
+        const data = JSON.parse(raw);
+        res.json(Array.isArray(data) ? data : []);
+      } else {
+        res.json([]);
+      }
+    } catch (err: any) {
+      console.error("TV shows read error:", err.message);
+      res.json([]);
+    }
+  });
+
+  app.post("/api/tv-shows", (req, res) => {
+    try {
+      const tvApiKey = process.env.TV_API_KEY;
+      if (tvApiKey) {
+        const auth = req.headers.authorization;
+        if (!auth || auth !== `Bearer ${tvApiKey}`) {
+          return res.status(401).json({ error: "Unauthorized" });
+        }
+      }
+      const payload = req.body;
+      if (!Array.isArray(payload)) {
+        return res.status(400).json({ error: "Payload must be an array" });
+      }
+      fs.writeFileSync(tvShowsFile, JSON.stringify(payload, null, 2), "utf-8");
+      res.json({ ok: true, count: payload.length });
+    } catch (err: any) {
+      console.error("TV shows write error:", err.message);
+      res.status(500).json({ error: "Failed to save TV shows data" });
+    }
+  });
 
   // === SEED DEFAULT PROPERTY (if empty) ===
   const existingProps = storage.getProperties();

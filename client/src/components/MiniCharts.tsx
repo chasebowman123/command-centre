@@ -31,10 +31,11 @@ const RANGE_MAP: Record<string, string> = {
   "1Y": "1y",
 };
 
-function MiniChart({ symbol, label }: { symbol: string; label: string }) {
+function MiniChart({ symbol, label, usdToGbp }: { symbol: string; label: string; usdToGbp: number }) {
   const [range, setRange] = useState<string>("1D");
+  const isSpx = symbol === "SPX6900-USD";
 
-  const { data: history = [] } = useQuery<{ date: string; close: number }[]>({
+  const { data: rawHistory = [] } = useQuery<{ date: string; close: number }[]>({
     queryKey: ["/api/history", symbol, range],
     queryFn: async () => {
       const res = await apiRequest(
@@ -46,6 +47,11 @@ function MiniChart({ symbol, label }: { symbol: string; label: string }) {
     staleTime: 300000,
     refetchInterval: 300000,
   });
+
+  // Convert SPX6900 history to GBP
+  const history = isSpx
+    ? rawHistory.map((p) => ({ ...p, close: p.close * usdToGbp }))
+    : rawHistory;
 
   // Quote for current price + change
   const { data: quotes = [] } = useQuery<Quote[]>({
@@ -65,6 +71,9 @@ function MiniChart({ symbol, label }: { symbol: string; label: string }) {
   const isPositive = q ? q.changesPercentage >= 0 : true;
   const lineColor = isPositive ? "#22c55e" : "#ef4444";
   const fillColor = isPositive ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.10)";
+
+  // Apply GBP conversion to current price for SPX6900
+  const displayPrice = q ? (isSpx ? q.price * usdToGbp : q.price) : 0;
 
   const firstPrice = history.length > 0 ? history[0].close : 0;
   const lastPrice = history.length > 0 ? history[history.length - 1].close : 0;
@@ -101,7 +110,7 @@ function MiniChart({ symbol, label }: { symbol: string; label: string }) {
       {/* Price + change */}
       <div className="flex items-baseline gap-2 mb-1">
         <span className="text-white text-lg font-bold tabular-nums">
-          {q ? formatChartPrice(q.price, symbol) : lastPrice ? formatChartPrice(lastPrice, symbol) : "—"}
+          {q ? formatChartPrice(displayPrice, symbol) : lastPrice ? formatChartPrice(lastPrice, symbol) : "—"}
         </span>
         {q && (
           <span
@@ -166,17 +175,29 @@ function MiniChart({ symbol, label }: { symbol: string; label: string }) {
 }
 
 export function MiniCharts() {
+  // Fetch USD/GBP rate for SPX6900 conversion
+  const { data: fxQuotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes", "chart-fx", "USDGBP=X"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/quotes?tickers=USDGBP%3DX`);
+      return res.json();
+    },
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+  const usdToGbp = fxQuotes[0]?.price || 0.757;
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3" data-testid="mini-charts">
       {CHART_TICKERS.map((t) => (
-        <MiniChart key={t.symbol} symbol={t.symbol} label={t.label} />
+        <MiniChart key={t.symbol} symbol={t.symbol} label={t.label} usdToGbp={usdToGbp} />
       ))}
     </div>
   );
 }
 
 function formatChartPrice(price: number, symbol: string): string {
-  if (symbol === "SPX6900-USD") return `$${price.toFixed(4)}`;
+  if (symbol === "SPX6900-USD") return `£${price.toFixed(4)}`;
   if (price >= 10000) return price.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   if (price >= 100) return `$${price.toFixed(2)}`;
   if (price < 1) return `$${price.toFixed(4)}`;

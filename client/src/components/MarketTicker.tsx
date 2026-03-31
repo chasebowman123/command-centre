@@ -56,9 +56,15 @@ export function MarketTicker() {
     );
   }
 
+  // Get USD/GBP rate for converting crypto prices
+  const usdGbpQuote = quoteMap.get("USDGBP=X");
+  const usdToGbp = usdGbpQuote?.price || 0.757;
+
   const items = MARKET_TICKERS.map((ticker) => {
     const q = quoteMap.get(ticker.symbol);
     const isPositive = q ? q.changesPercentage >= 0 : true;
+    // Convert SPX6900 price to GBP
+    const displayPrice = q ? (ticker.symbol === "SPX6900-USD" ? q.price * usdToGbp : q.price) : 0;
     return (
       <div
         key={ticker.symbol}
@@ -67,7 +73,7 @@ export function MarketTicker() {
       >
         <span className="text-[11px] text-gray-400 font-medium">{ticker.label}</span>
         <span className="text-[11px] text-white font-semibold tabular-nums">
-          {q ? formatPrice(q.price, ticker.symbol) : "—"}
+          {q ? formatPrice(displayPrice, ticker.symbol) : "—"}
         </span>
         {q && (
           <span
@@ -106,6 +112,6 @@ function formatPrice(price: number, symbol: string): string {
   }
   if (symbol === "USDGBP=X") return price.toFixed(4);
   if (symbol.startsWith("^")) return price.toFixed(2);
-  if (symbol === "SPX6900-USD") return `$${price.toFixed(4)}`;
+  if (symbol === "SPX6900-USD") return `£${price.toFixed(4)}`;
   return `$${price.toFixed(2)}`;
 }

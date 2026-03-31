@@ -13,6 +13,9 @@ interface Quote {
   name: string;
 }
 
+const SPX_TICKER = "SPX6900-USD";
+function isSPX(ticker: string) { return ticker === SPX_TICKER; }
+
 function getLogo(ticker: string): string {
   // Use logo.dev for stock logos, fallback to generic
   const clean = ticker.replace("-USD", "").replace("=X", "");
@@ -50,6 +53,18 @@ export function PortfolioPanel() {
       return res.json();
     },
   });
+
+  // Fetch USD/GBP rate for SPX6900 conversion
+  const { data: fxQuotes = [] } = useQuery<Quote[]>({
+    queryKey: ["/api/quotes", "portfolio-fx", "USDGBP=X"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/quotes?tickers=USDGBP%3DX`);
+      return res.json();
+    },
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+  const usdToGbp = fxQuotes[0]?.price || 0.757;
 
   const holdingTickers = holdings.map((h) => h.ticker).join(",");
 
@@ -95,10 +110,14 @@ export function PortfolioPanel() {
   let totalValue = 0;
   const rows = holdings.map((h) => {
     const q = quoteMap.get(h.ticker);
-    const currentPrice = q?.price || 0;
+    const rawPrice = q?.price || 0;
+    // Convert SPX6900 from USD to GBP (avg price stored in USD, live price in USD)
+    const spx = isSPX(h.ticker);
+    const currentPrice = spx ? rawPrice * usdToGbp : rawPrice;
+    const avgPriceDisplay = spx ? h.avgPrice * usdToGbp : h.avgPrice;
     const isShort = h.quantity < 0;
     const absQty = Math.abs(h.quantity);
-    const costBasis = absQty * h.avgPrice;
+    const costBasis = absQty * avgPriceDisplay;
     let marketValue: number;
     let pnl: number;
 
@@ -114,14 +133,14 @@ export function PortfolioPanel() {
     totalCost += costBasis;
     totalValue += isShort ? costBasis - pnl : marketValue;
 
-    return { ...h, currentPrice, marketValue, pnl, pnlPct, isShort, costBasis };
+    return { ...h, currentPrice, avgPriceDisplay, marketValue, pnl, pnlPct, isShort, costBasis, isGbp: spx };
   });
 
   const totalPnl = totalValue - totalCost;
   const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0;
 
   return (
-    <div className="panel-card p-4 md:p-5 h-full flex flex-col" data-testid="portfolio-panel">
+    <div className="panel-card p-4 md:p-5 flex flex-col" data-testid="portfolio-panel">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Briefcase className="w-4 h-4 text-primary" />
@@ -307,13 +326,13 @@ export function PortfolioPanel() {
                     {row.quantity.toLocaleString()}
                   </td>
                   <td className="text-right py-3 px-2 tabular-nums text-muted-foreground">
-                    {formatPrice(row.avgPrice)}
+                    {formatPrice(row.avgPriceDisplay, row.isGbp)}
                   </td>
                   <td className="text-right py-3 px-2 tabular-nums font-medium">
-                    {row.currentPrice ? formatPrice(row.currentPrice) : "—"}
+                    {row.currentPrice ? formatPrice(row.currentPrice, row.isGbp) : "—"}
                   </td>
                   <td className="text-right py-3 px-2 tabular-nums">
-                    {row.currentPrice ? formatCurrency(row.marketValue) : "—"}
+                    {row.currentPrice ? formatCurrency(row.marketValue, row.isGbp) : "—"}
                   </td>
                   <td
                     className={`text-right py-3 px-2 tabular-nums font-medium ${row.pnl >= 0 ? "text-positive" : "text-negative"}`}
@@ -322,7 +341,7 @@ export function PortfolioPanel() {
                       <div>
                         <span>
                           {row.pnl >= 0 ? "+" : ""}
-                          {formatCurrency(row.pnl)}
+                          {formatCurrency(row.pnl, row.isGbp)}
                         </span>
                         <span className="block text-[11px]">
                           ({row.pnlPct >= 0 ? "+" : ""}
@@ -371,15 +390,17 @@ export function PortfolioPanel() {
   );
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number, gbp = false): string {
+  const sym = gbp ? "£" : "$";
   const abs = Math.abs(value);
-  if (abs >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-  if (abs >= 1000) return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-  return `$${value.toFixed(2)}`;
+  if (abs >= 1000000) return `${sym}${(value / 1000000).toFixed(2)}M`;
+  if (abs >= 1000) return `${sym}${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `${sym}${value.toFixed(2)}`;
 }
 
-function formatPrice(price: number): string {
-  if (price < 0.01) return `$${price.toFixed(6)}`;
-  if (price < 1) return `$${price.toFixed(4)}`;
-  return `$${price.toFixed(2)}`;
+function formatPrice(price: number, gbp = false): string {
+  const sym = gbp ? "£" : "$";
+  if (price < 0.01) return `${sym}${price.toFixed(6)}`;
+  if (price < 1) return `${sym}${price.toFixed(4)}`;
+  return `${sym}${price.toFixed(2)}`;
 }

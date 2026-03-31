@@ -3,6 +3,7 @@ import { TasksPanel } from "@/components/TasksPanel";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
 import { PensionsPanel } from "@/components/PensionsPanel";
 import { PropertyPanel } from "@/components/PropertyPanel";
+import { TVShowsPanel } from "@/components/TVShowsPanel";
 import { WeatherPanel } from "@/components/WeatherPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
 import { MiniCharts } from "@/components/MiniCharts";
@@ -31,9 +32,9 @@ export default function Dashboard() {
       </header>
 
       {/* Dashboard content — 2-column: main content left, Key Links right */}
-      <main className="flex-1 overflow-y-auto px-4 md:px-5 pb-6">
+      <main className="px-4 md:px-5 pb-4">
         <div className="max-w-[1800px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
             {/* === LEFT COLUMN (9 cols) — all main content === */}
             <div className="lg:col-span-9 space-y-4">
@@ -52,6 +53,9 @@ export default function Dashboard() {
               {/* Portfolio */}
               <PortfolioPanel />
 
+              {/* TV Shows */}
+              <TVShowsPanel />
+
               {/* Pensions & Property side by side */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <PensionsPanel />
@@ -68,7 +72,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-4 pb-2">
           <PerplexityAttribution />
         </div>
       </main>

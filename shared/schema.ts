@@ -58,3 +58,4 @@ export const properties = sqliteTable("properties", {
 export const insertPropertySchema = createInsertSchema(properties).omit({ id: true });
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Property = typeof properties.$inferSelect;
+
