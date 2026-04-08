@@ -21,8 +21,9 @@ const CHART_TICKERS = [
   { symbol: "SPX6900-USD", label: "SPX6900" },
 ];
 
-const RANGES = ["1D", "1W", "1M", "3M", "6M", "1Y"] as const;
+const RANGES = ["1H", "1D", "1W", "1M", "3M", "6M", "1Y"] as const;
 const RANGE_MAP: Record<string, string> = {
+  "1H": "1h",
   "1D": "1d",
   "1W": "5d",
   "1M": "1mo",
@@ -32,7 +33,7 @@ const RANGE_MAP: Record<string, string> = {
 };
 
 function MiniChart({ symbol, label, usdToGbp }: { symbol: string; label: string; usdToGbp: number }) {
-  const [range, setRange] = useState<string>("1D");
+  const [range, setRange] = useState<string>("1H");
   const isSpx = symbol === "SPX6900-USD";
 
   const { data: rawHistory = [] } = useQuery<{ date: string; close: number }[]>({
@@ -150,7 +151,15 @@ function MiniChart({ symbol, label, usdToGbp }: { symbol: string; label: string;
                   fontSize: "11px",
                   color: "#ccc",
                 }}
-                labelFormatter={(v) => v}
+                labelFormatter={(v) => {
+                  if (!v) return "";
+                  // For intraday ranges, show time (HH:mm)
+                  if (range === "1H" || range === "1D") {
+                    const d = new Date(v);
+                    if (!isNaN(d.getTime())) return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+                  }
+                  return String(v).slice(0, 10);
+                }}
                 formatter={(v: number) => [formatChartPrice(v, symbol), "Price"]}
               />
               <Area

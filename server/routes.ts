@@ -241,13 +241,15 @@ export async function registerRoutes(
 
       // CoinGecko for SPX6900
       if (COINGECKO_MAP[symbol]) {
-        const days = range === "1d" ? 1 : range === "1w" || range === "5d" ? 7 : range === "1mo" ? 30 : range === "3mo" ? 90 : range === "6mo" ? 180 : 365;
+        const days = range === "1h" ? 1 : range === "1d" ? 1 : range === "1w" || range === "5d" ? 7 : range === "1mo" ? 30 : range === "3mo" ? 90 : range === "6mo" ? 180 : 365;
         const url = `https://api.coingecko.com/api/v3/coins/${COINGECKO_MAP[symbol]}/market_chart?vs_currency=usd&days=${days}`;
         const resp = await fetch(url);
         const data = await resp.json();
         if (data.prices) {
-          const points = data.prices.map((p: [number, number]) => ({
-            date: new Date(p[0]).toISOString().slice(0, 10),
+          const cutoff = range === "1h" ? Date.now() - 3600000 : 0;
+          const filtered = cutoff > 0 ? data.prices.filter((p: [number, number]) => p[0] >= cutoff) : data.prices;
+          const points = filtered.map((p: [number, number]) => ({
+            date: new Date(p[0]).toISOString(),
             close: p[1],
           }));
           // Downsample to ~60 points max
@@ -261,8 +263,25 @@ export async function registerRoutes(
 
       // Yahoo Finance historical
       const yfClient = await getYf();
-      // Calculate actual date for period1
       const now = new Date();
+
+      // 1H: last 60 minutes with 1m interval
+      if (range === "1h") {
+        const period1 = new Date(now.getTime() - 75 * 60 * 1000); // 75 min back for buffer
+        const result = await yfClient.chart(symbol, { period1, interval: "1m" });
+        const quotes = result?.quotes || [];
+        const cutoff = now.getTime() - 3600000;
+        const points = quotes
+          .filter((q: any) => q.close != null && new Date(q.date).getTime() >= cutoff)
+          .map((q: any) => ({
+            date: new Date(q.date).toISOString(),
+            close: q.close,
+          }));
+        historyCache[cacheKey] = { data: points, ts: Date.now() };
+        return res.json(points);
+      }
+
+      // Other ranges
       const daysBack: Record<string, number> = {
         "1d": 1, "5d": 5, "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365,
       };
