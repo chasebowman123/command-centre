@@ -448,6 +448,73 @@ export async function registerRoutes(
     }
   });
 
+  // === HOME ASSISTANT PROXY ===
+  const HA_BASE = process.env.HA_URL || "https://nujraxh1k9mt9kk0ul8x56dxac9afine.ui.nabu.casa";
+
+  async function haFetch(urlPath: string, options: RequestInit = {}) {
+    const token = process.env.HA_TOKEN;
+    if (!token) throw new Error("HA_TOKEN_MISSING");
+    return fetch(`${HA_BASE}${urlPath}`, {
+      ...options,
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  }
+
+  // GET /api/ha/states?ids=entity1,entity2  →  { entity1: "on", entity2: "off" }
+  app.get("/api/ha/states", async (req, res) => {
+    try {
+      const ids = (req.query.ids as string || "").split(",").filter(Boolean);
+      if (!ids.length) return res.json({});
+      const results: Record<string, string> = {};
+      await Promise.all(ids.map(async (id) => {
+        try {
+          const r = await haFetch(`/api/states/${id}`);
+          if (r.ok) { const d = await r.json(); results[id] = d.state ?? "unknown"; }
+        } catch {}
+      }));
+      res.json(results);
+    } catch (err: any) {
+      if (err.message === "HA_TOKEN_MISSING") return res.status(503).json({ error: "HA_TOKEN not set" });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/ha/service  →  { domain, service, entity_id }
+  app.post("/api/ha/service", async (req, res) => {
+    try {
+      const { domain, service, entity_id } = req.body;
+      if (!domain || !service) return res.status(400).json({ error: "domain and service required" });
+      const body: Record<string, any> = {};
+      if (entity_id) body.entity_id = entity_id;
+      const r = await haFetch(`/api/services/${domain}/${service}`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      res.json({ ok: r.ok, status: r.status });
+    } catch (err: any) {
+      if (err.message === "HA_TOKEN_MISSING") return res.status(503).json({ error: "HA_TOKEN not set" });
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/ha/camera/:entityId  →  proxied JPEG snapshot
+  app.get("/api/ha/camera/:entityId", async (req, res) => {
+    try {
+      const r = await haFetch(`/api/camera_proxy/${req.params.entityId}`);
+      if (!r.ok) return res.status(r.status).send("Camera unavailable");
+      const buf = await r.arrayBuffer();
+      res.set("Content-Type", r.headers.get("content-type") || "image/jpeg");
+      res.set("Cache-Control", "no-cache, no-store");
+      res.send(Buffer.from(buf));
+    } catch (err: any) {
+      res.status(503).send("HA not configured");
+    }
+  });
+
   // === SEED DEFAULT PROPERTY (if empty) ===
   const existingProps = storage.getProperties();
   if (existingProps.length === 0) {

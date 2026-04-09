@@ -1,6 +1,5 @@
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
-import { PortfolioPanel } from "@/components/PortfolioPanel";
 import { PensionsPanel } from "@/components/PensionsPanel";
 import { PropertyPanel } from "@/components/PropertyPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
@@ -9,6 +8,7 @@ import { KeyLinksPanel } from "@/components/KeyLinksPanel";
 import { MiniCharts } from "@/components/MiniCharts";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SmartHomePanel } from "@/components/SmartHomePanel";
 
 export default function Dashboard() {
   return (
@@ -49,11 +49,11 @@ export default function Dashboard() {
               {/* Mini Charts */}
               <MiniCharts />
 
-              {/* Portfolio */}
-              <PortfolioPanel />
-
               {/* TV Shows */}
               <TVShowsPanel />
+
+              {/* Smart Home */}
+              <SmartHomePanel />
 
               {/* Pensions & Property side by side */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
