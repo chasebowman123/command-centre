@@ -33,6 +33,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
+  // === HEALTH CHECK (used by Railway) ===
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true });
+  });
+
   // === HOLDINGS CRUD ===
   app.get("/api/holdings", (_req, res) => {
     const h = storage.getHoldings();
