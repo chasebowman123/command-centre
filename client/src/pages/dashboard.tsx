@@ -1,7 +1,5 @@
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
-import { PensionsPanel } from "@/components/PensionsPanel";
-import { PropertyPanel } from "@/components/PropertyPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
 import { WeatherPanel } from "@/components/WeatherPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
@@ -55,11 +53,6 @@ export default function Dashboard() {
               {/* Smart Home */}
               <SmartHomePanel />
 
-              {/* Pensions & Property side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <PensionsPanel />
-                <PropertyPanel />
-              </div>
             </div>
 
             {/* === RIGHT COLUMN (3 cols) — Key Links spanning full height === */}

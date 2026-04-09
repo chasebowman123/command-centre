@@ -5,6 +5,13 @@ import { insertHoldingSchema, insertTaskSchema, insertPensionFundSchema, insertP
 import * as fs from "fs";
 import * as path from "path";
 
+// node-ical — lazy dynamic import
+let nodeIcal: any = null;
+async function getIcal() {
+  if (!nodeIcal) nodeIcal = await import("node-ical");
+  return nodeIcal;
+}
+
 // yahoo-finance2 v3 — lazy dynamic import (avoids CJS/ESM issues with tsx)
 let yf: any = null;
 async function getYf() {
@@ -445,6 +452,74 @@ export async function registerRoutes(
     } catch (err: any) {
       console.error("TV shows write error:", err.message);
       res.status(500).json({ error: "Failed to save TV shows data" });
+    }
+  });
+
+  // === GOOGLE CALENDAR (iCal secret address) ===
+  const calCache: { data: any; ts: number } | null = null;
+  let calCacheData: { events: any[]; error?: string } | null = null;
+  let calCacheTs = 0;
+  const CAL_TTL = 120000; // 2 min cache
+
+  app.get("/api/calendar", async (_req, res) => {
+    try {
+      if (calCacheData && Date.now() - calCacheTs < CAL_TTL) {
+        return res.json(calCacheData);
+      }
+      const urls = (process.env.GCAL_ICAL_URLS || process.env.GCAL_ICAL_URL || "").split(",").map(u => u.trim()).filter(Boolean);
+      if (!urls.length) return res.json({ events: [], error: "GCAL_ICAL_URL not set" });
+
+      const ical = await getIcal();
+      const now = new Date();
+      const cutoff = new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000); // 3 weeks ahead
+
+      const allEvents: any[] = [];
+      await Promise.all(urls.map(async (url) => {
+        try {
+          const data = await ical.async.fromURL(url);
+          for (const [, ev] of Object.entries(data) as any[]) {
+            if (ev.type !== "VEVENT") continue;
+            const start = ev.start ? new Date(ev.start) : null;
+            if (!start) continue;
+
+            if (ev.rrule) {
+              // Expand recurring events
+              const dates: Date[] = ev.rrule.between(now, cutoff);
+              for (const d of dates) {
+                const duration = ev.end && ev.start ? (new Date(ev.end).getTime() - new Date(ev.start).getTime()) : 0;
+                allEvents.push({
+                  id: `${ev.uid}-${d.getTime()}`,
+                  title: ev.summary || "(No title)",
+                  start: d.toISOString(),
+                  end: new Date(d.getTime() + duration).toISOString(),
+                  allDay: ev.datetype === "date",
+                  location: ev.location || null,
+                });
+              }
+            } else if (start >= now && start <= cutoff) {
+              allEvents.push({
+                id: ev.uid,
+                title: ev.summary || "(No title)",
+                start: start.toISOString(),
+                end: ev.end ? new Date(ev.end).toISOString() : null,
+                allDay: ev.datetype === "date",
+                location: ev.location || null,
+              });
+            }
+          }
+        } catch (e: any) {
+          console.error("iCal fetch error:", e.message);
+        }
+      }));
+
+      allEvents.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+      const result = { events: allEvents.slice(0, 20) };
+      calCacheData = result;
+      calCacheTs = Date.now();
+      res.json(result);
+    } catch (err: any) {
+      console.error("Calendar error:", err.message);
+      res.json({ events: [], error: err.message });
     }
   });
 
