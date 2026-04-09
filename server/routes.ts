@@ -416,13 +416,14 @@ export async function registerRoutes(
       if (fs.existsSync(tvShowsFile)) {
         const raw = fs.readFileSync(tvShowsFile, "utf-8");
         const data = JSON.parse(raw);
-        res.json(Array.isArray(data) ? data : []);
+        const lastUpdated = fs.statSync(tvShowsFile).mtime.toISOString();
+        res.json({ shows: Array.isArray(data) ? data : [], lastUpdated });
       } else {
-        res.json([]);
+        res.json({ shows: [], lastUpdated: null });
       }
     } catch (err: any) {
       console.error("TV shows read error:", err.message);
-      res.json([]);
+      res.json({ shows: [], lastUpdated: null });
     }
   });
 

@@ -9,7 +9,6 @@ import { KeyLinksPanel } from "@/components/KeyLinksPanel";
 import { MiniCharts } from "@/components/MiniCharts";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 
 export default function Dashboard() {
   return (
@@ -20,7 +19,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="px-4 md:px-6 py-3 flex items-center justify-between shrink-0">
         <h1 className="text-lg md:text-xl font-bold tracking-tight">
-          Edward Eidam Personal Dashboard
+          Command Centre
         </h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
@@ -72,9 +71,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mt-4 pb-2">
-          <PerplexityAttribution />
-        </div>
+        <div className="h-4" />
       </main>
     </div>
   );

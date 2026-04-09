@@ -243,19 +243,19 @@ export function PortfolioPanel() {
       {!holdingsLoading && quotes.length > 0 && (
         <div className="flex flex-wrap gap-4 mb-4 p-3 rounded-lg bg-muted/30">
           <div>
-            <p className="text-[11px] text-muted-foreground">Total Value</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Total Value</p>
             <p className="text-lg font-semibold tabular-nums" data-testid="text-total-value">
               {formatCurrency(totalValue)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Total Cost</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Total Cost</p>
             <p className="text-sm font-medium tabular-nums text-muted-foreground">
               {formatCurrency(totalCost)}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-muted-foreground">Total P&L</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">Total P&L</p>
             <p
               className={`text-lg font-semibold tabular-nums ${totalPnl >= 0 ? "text-positive" : "text-negative"}`}
               data-testid="text-total-pnl"
@@ -313,6 +313,7 @@ export function PortfolioPanel() {
                             <Badge
                               variant="outline"
                               className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive"
+                              title="Short position — profits when price falls"
                             >
                               SHORT
                             </Badge>
@@ -392,10 +393,11 @@ export function PortfolioPanel() {
 
 function formatCurrency(value: number, gbp = false): string {
   const sym = gbp ? "£" : "$";
+  const sign = value < 0 ? "-" : "";
   const abs = Math.abs(value);
-  if (abs >= 1000000) return `${sym}${(value / 1000000).toFixed(2)}M`;
-  if (abs >= 1000) return `${sym}${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-  return `${sym}${value.toFixed(2)}`;
+  if (abs >= 1000000) return `${sign}${sym}${(abs / 1000000).toFixed(2)}M`;
+  if (abs >= 1000) return `${sign}${sym}${abs.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  return `${sign}${sym}${abs.toFixed(2)}`;
 }
 
 function formatPrice(price: number, gbp = false): string {

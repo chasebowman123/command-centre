@@ -96,7 +96,7 @@ function MiniChart({ symbol, label, usdToGbp }: { symbol: string; label: string;
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-medium transition-colors ${
+              className={`text-[9px] sm:text-[10px] min-w-[32px] min-h-[32px] px-2 py-1.5 rounded font-medium transition-colors flex items-center justify-center ${
                 range === r
                   ? "bg-white/15 text-white"
                   : "text-white/40 hover:text-white/70"

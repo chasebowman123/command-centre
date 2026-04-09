@@ -142,7 +142,7 @@ export function TasksPanel() {
           </>
         )}
         {tasks.length === 0 && (
-          <p className="text-sm text-muted-foreground py-2">No tasks yet. Add one above.</p>
+          <p className="text-sm text-muted-foreground py-2">Nothing on the list yet.</p>
         )}
       </div>
     </div>

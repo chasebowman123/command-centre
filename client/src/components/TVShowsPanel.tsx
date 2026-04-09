@@ -13,9 +13,38 @@ interface TvShowData {
   nextEpisodeSeason: number | null;
   nextEpisodeNumber: number | null;
   nextEpisodeDate: string | null;
+  nextEpisodeTime?: string | null; // e.g. "8:00 P.M." from TVMaze
+}
+
+interface TvShowsResponse {
+  shows: TvShowData[];
+  lastUpdated: string | null;
 }
 
 type FilterTab = "all" | "upcoming" | "airing";
+
+// Fix 3: Convert 12h time string to 24h
+function to24h(timeStr: string | null | undefined): string | null {
+  if (!timeStr) return null;
+  const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(A\.?M\.?|P\.?M\.?)/i);
+  if (!match) return timeStr;
+  let hours = parseInt(match[1]);
+  const minutes = match[2];
+  const period = match[3].replace(/\./g, "").toUpperCase();
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, "0")}:${minutes}`;
+}
+
+// Fix 7: Smart timestamp — minutes if <1h, absolute time if older
+function formatLastUpdated(iso: string | null): string {
+  if (!iso) return "";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "• just now";
+  if (diffMin < 60) return `• updated ${diffMin}m ago`;
+  return `• updated ${new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} today`;
+}
 
 function getCountdown(dateStr: string | null): string | null {
   if (!dateStr) return null;
@@ -32,6 +61,7 @@ function getCountdown(dateStr: string | null): string | null {
   return `In ${Math.ceil(diffDays / 30)}mo`;
 }
 
+// Fix 2: Normalise TBA / To Be Determined → single amber badge
 function getStatusInfo(show: TvShowData): { label: string; variant: "default" | "secondary" | "outline" | "destructive"; color: string } {
   if (show.nextEpisodeDate) {
     const now = new Date();
@@ -40,7 +70,10 @@ function getStatusInfo(show: TvShowData): { label: string; variant: "default" | 
     if (diffDays <= 0) return { label: "Airing", variant: "default", color: "bg-green-500/15 text-green-500 border-green-500/20" };
     return { label: "Upcoming", variant: "secondary", color: "bg-blue-500/15 text-blue-500 border-blue-500/20" };
   }
-  if (show.status === "Running") return { label: "TBA", variant: "outline", color: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20" };
+  // Normalise both "Running" and "To Be Determined" to amber TBA
+  if (show.status === "Running" || show.status === "To Be Determined" || show.status === "TBA") {
+    return { label: "TBA", variant: "outline", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20" };
+  }
   return { label: "Ended", variant: "outline", color: "bg-muted text-muted-foreground border-border" };
 }
 
@@ -56,17 +89,24 @@ function formatEpisodeCode(season: number | null, episode: number | null): strin
 }
 
 export function TVShowsPanel() {
-  const [filter, setFilter] = useState<FilterTab>("all");
+  // Fix 1: Default to "airing" instead of "all"
+  const [filter, setFilter] = useState<FilterTab>("airing");
 
-  const { data: shows = [], isLoading, refetch, isFetching } = useQuery<TvShowData[]>({
+  const { data: tvData, isLoading, refetch, isFetching } = useQuery<TvShowsResponse>({
     queryKey: ["/api/tv-shows"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/tv-shows");
-      return res.json();
+      const json = await res.json();
+      // Handle both old array format and new { shows, lastUpdated } format
+      if (Array.isArray(json)) return { shows: json, lastUpdated: null };
+      return json as TvShowsResponse;
     },
     staleTime: 300000,
     refetchInterval: 600000,
   });
+
+  const shows = tvData?.shows ?? [];
+  const lastUpdated = tvData?.lastUpdated ?? null;
 
   // Filter out ended shows and sort by next episode date
   const activeShows = shows
@@ -100,6 +140,12 @@ export function TVShowsPanel() {
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             TV Shows
           </p>
+          {/* Fix 7: Smart last-updated timestamp */}
+          {lastUpdated && (
+            <span className="text-[10px] text-muted-foreground/60">
+              {formatLastUpdated(lastUpdated)}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {/* Filter tabs */}
@@ -164,6 +210,8 @@ export function TVShowsPanel() {
               {filteredShows.map((show, i) => {
                 const statusInfo = getStatusInfo(show);
                 const countdown = getCountdown(show.nextEpisodeDate);
+                // Fix 3: Convert episode air time to 24h
+                const airTime24 = to24h(show.nextEpisodeTime);
                 return (
                   <tr
                     key={`${show.showName}-${i}`}
@@ -208,6 +256,7 @@ export function TVShowsPanel() {
                           <p className="text-sm truncate max-w-[200px]">{show.nextEpisodeName}</p>
                           <p className="text-[11px] text-muted-foreground">
                             {formatEpisodeCode(show.nextEpisodeSeason, show.nextEpisodeNumber)}
+                            {airTime24 && <span className="ml-1">{airTime24}</span>}
                           </p>
                         </div>
                       ) : (
