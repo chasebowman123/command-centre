@@ -63,6 +63,12 @@ export async function registerRoutes(
   // Auth guard — protects all /api/* routes below this point
   app.use("/api", (req, res, next) => {
     if (req.session.authenticated) return next();
+    // Allow Bearer token auth for API endpoints (used by cron agents)
+    const tvApiKey = process.env.TV_API_KEY;
+    if (tvApiKey) {
+      const auth = req.headers.authorization;
+      if (auth === `Bearer ${tvApiKey}`) return next();
+    }
     res.status(401).json({ message: "Unauthorised" });
   });
 
