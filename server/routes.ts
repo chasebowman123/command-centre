@@ -199,7 +199,7 @@ export async function registerRoutes(
       // London coordinates
       const lat = 51.5074;
       const lon = -0.1278;
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum&timezone=Europe%2FLondon&forecast_days=1`;
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_sum,weather_code&timezone=Europe%2FLondon&forecast_days=6`;
       const resp = await fetch(url);
       const data = await resp.json();
       res.json(data);
@@ -606,6 +606,30 @@ export async function registerRoutes(
     } catch (err: any) {
       if (err.message === "HA_TOKEN_MISSING") return res.status(503).json({ error: "HA_TOKEN not set" });
       res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/ha/camera/stream/:entityId  →  proxied MJPEG live stream
+  app.get("/api/ha/camera/stream/:entityId", async (req, res) => {
+    const token = process.env.HA_TOKEN;
+    if (!token) return res.status(503).send("HA_TOKEN not set");
+    const haUrl = HA_BASE;
+    try {
+      const streamUrl = `${haUrl}/api/camera_proxy_stream/${encodeURIComponent(req.params.entityId)}`;
+      const r = await fetch(streamUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) return res.status(r.status).send("Stream unavailable");
+      res.set("Content-Type", r.headers.get("content-type") || "multipart/x-mixed-replace; boundary=ffmpeg");
+      res.set("Cache-Control", "no-cache");
+      res.set("Connection", "keep-alive");
+      // Pipe WHATWG ReadableStream → Node Writable
+      const { Readable } = await import("stream");
+      const nodeStream = Readable.fromWeb(r.body as any);
+      nodeStream.pipe(res);
+      req.on("close", () => nodeStream.destroy());
+    } catch {
+      res.status(503).send("Stream error");
     }
   });
 

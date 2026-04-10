@@ -21,7 +21,7 @@ const CHART_TICKERS = [
   { symbol: "SPX6900-USD", label: "SPX6900" },
 ];
 
-const RANGES = ["1H", "1D", "1W", "1M", "3M", "6M", "1Y"] as const;
+const RANGES = ["1D", "1W", "1M", "3M", "6M", "1Y"] as const;
 const RANGE_MAP: Record<string, string> = {
   "1H": "1h",
   "1D": "1d",
@@ -33,7 +33,7 @@ const RANGE_MAP: Record<string, string> = {
 };
 
 function MiniChart({ symbol, label, usdToGbp }: { symbol: string; label: string; usdToGbp: number }) {
-  const [range, setRange] = useState<string>("1H");
+  const [range, setRange] = useState<string>("1D");
   const isSpx = symbol === "SPX6900-USD";
 
   const { data: rawHistory = [] } = useQuery<{ date: string; close: number }[]>({

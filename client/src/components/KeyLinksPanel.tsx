@@ -72,11 +72,11 @@ function getFavicon(url: string): string {
 
 export function KeyLinksPanel() {
   return (
-    <div className="panel-card p-4 h-full flex flex-col" data-testid="key-links-panel">
+    <div className="panel-card p-4 flex flex-col" style={{ maxHeight: "calc(100vh - 160px)" }} data-testid="key-links-panel">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         Key Links
       </p>
-      <div className="flex-1 overflow-y-auto -mr-1 pr-1 space-y-3">
+      <div className="flex-1 overflow-y-auto -mr-1 pr-1 space-y-3" style={{ minHeight: 0 }}>
         {LINK_GROUPS.map((group) => (
           <div key={group.category}>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1 px-2">

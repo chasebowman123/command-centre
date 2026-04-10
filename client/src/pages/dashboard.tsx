@@ -29,6 +29,7 @@ function HomeTab() {
 
           {/* LEFT COLUMN */}
           <div className="lg:col-span-9 space-y-4">
+            <SmartHomePanel />
             <WeatherPanel />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <CalendarPanel />
@@ -36,7 +37,6 @@ function HomeTab() {
             </div>
             <MiniCharts />
             <TVShowsPanel />
-            <SmartHomePanel />
           </div>
 
           {/* RIGHT COLUMN — Key Links */}
