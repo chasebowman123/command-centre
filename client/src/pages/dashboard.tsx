@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
@@ -10,10 +11,68 @@ import { SmartHomePanel } from "@/components/SmartHomePanel";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
 
+// ── Tab definitions ──────────────────────────────────────────────────────────
+const TABS = [
+  { id: "home",    label: "Home" },
+  { id: "nba",     label: "NBA" },
+  { id: "markets", label: "Markets" },
+] as const;
+
+type TabId = typeof TABS[number]["id"];
+
+// ── Sub-pages ────────────────────────────────────────────────────────────────
+function HomeTab() {
+  return (
+    <main className="px-4 md:px-5 pb-4">
+      <div className="max-w-[1800px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-9 space-y-4">
+            <WeatherPanel />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CalendarPanel />
+              <TasksPanel />
+            </div>
+            <MiniCharts />
+            <TVShowsPanel />
+            <SmartHomePanel />
+          </div>
+
+          {/* RIGHT COLUMN — Key Links */}
+          <div className="lg:col-span-3">
+            <div className="lg:sticky lg:top-4">
+              <KeyLinksPanel />
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div className="h-4" />
+    </main>
+  );
+}
+
+function IframeTab({ src, title }: { src: string; title: string }) {
+  return (
+    <div className="flex-1 px-4 md:px-5 pb-4">
+      <iframe
+        src={src}
+        title={title}
+        className="w-full rounded-lg border border-border"
+        style={{ height: "calc(100vh - 120px)", minHeight: 600 }}
+      />
+    </div>
+  );
+}
+
+// ── Main dashboard shell ─────────────────────────────────────────────────────
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState<TabId>("home");
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* === MOVING TICKER — very top === */}
+      {/* Moving ticker */}
       <MarketTicker />
 
       {/* Header */}
@@ -42,44 +101,32 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Dashboard content — 2-column: main content left, Key Links right */}
-      <main className="px-4 md:px-5 pb-4">
-        <div className="max-w-[1800px] mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-
-            {/* === LEFT COLUMN (9 cols) — all main content === */}
-            <div className="lg:col-span-9 space-y-4">
-              {/* Weather */}
-              <WeatherPanel />
-
-              {/* Calendar + Tasks side by side */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CalendarPanel />
-                <TasksPanel />
-              </div>
-
-              {/* Mini Charts */}
-              <MiniCharts />
-
-              {/* TV Shows */}
-              <TVShowsPanel />
-
-              {/* Smart Home */}
-              <SmartHomePanel />
-
-            </div>
-
-            {/* === RIGHT COLUMN (3 cols) — Key Links spanning full height === */}
-            <div className="lg:col-span-3">
-              <div className="lg:sticky lg:top-4">
-                <KeyLinksPanel />
-              </div>
-            </div>
-          </div>
+      {/* Tab bar */}
+      <nav className="px-4 md:px-6 border-b border-border shrink-0">
+        <div className="flex items-center gap-1">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              data-testid={`tab-${tab.id}`}
+              className={`
+                px-4 py-2.5 text-sm font-medium rounded-t-md transition-colors relative
+                ${activeTab === tab.id
+                  ? "text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary"
+                  : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+      </nav>
 
-        <div className="h-4" />
-      </main>
+      {/* Tab content */}
+      {activeTab === "home"    && <HomeTab />}
+      {activeTab === "nba"     && <IframeTab src="https://nba-bet-tracker-production.up.railway.app/#/" title="NBA Tracker" />}
+      {activeTab === "markets" && <IframeTab src="https://market-tracker-production-d01a.up.railway.app" title="Market Tracker" />}
     </div>
   );
 }
