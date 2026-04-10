@@ -7,6 +7,8 @@ import { MiniCharts } from "@/components/MiniCharts";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SmartHomePanel } from "@/components/SmartHomePanel";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { LogOut } from "lucide-react";
 
 export default function Dashboard() {
   return (
@@ -25,6 +27,18 @@ export default function Dashboard() {
             <span className="text-xs text-muted-foreground">Live</span>
           </div>
           <ThemeToggle />
+          <button
+            onClick={async () => {
+              await apiRequest("POST", "/api/auth/logout");
+              queryClient.clear();
+              window.location.reload();
+            }}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Sign out"
+            data-testid="button-logout"
+          >
+            <LogOut size={15} />
+          </button>
         </div>
       </header>
 

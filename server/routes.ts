@@ -38,6 +38,34 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
+  // === AUTH ===
+  const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "command";
+
+  app.post("/api/auth/login", (req, res) => {
+    const { password } = req.body as { password?: string };
+    if (password === DASHBOARD_PASSWORD) {
+      req.session.authenticated = true;
+      res.json({ ok: true });
+    } else {
+      res.status(401).json({ message: "Incorrect password" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {});
+    res.json({ ok: true });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    res.json({ authenticated: !!req.session.authenticated });
+  });
+
+  // Auth guard — protects all /api/* routes below this point
+  app.use("/api", (req, res, next) => {
+    if (req.session.authenticated) return next();
+    res.status(401).json({ message: "Unauthorised" });
+  });
+
   // === HOLDINGS CRUD ===
   app.get("/api/holdings", (_req, res) => {
     const h = storage.getHoldings();
