@@ -9,7 +9,6 @@ const TOGGLE_IDS = [
   "input_boolean.lucas_sleeping",
   "light.kitchen_spotlights",
   "light.cloakroom_spotlights",
-  "light.lounge",
 ];
 
 const CAMERAS = [
@@ -19,23 +18,17 @@ const CAMERAS = [
 ];
 
 const SCENES = [
-  { id: "lounge_chill", label: "🌅 Lounge Chill", domain: "scene",  service: "turn_on",  entity: "scene.lounge_rolling_hills" },
-  { id: "bed_hills",    label: "🌄 Bed Hills",     domain: "scene",  service: "turn_on",  entity: "scene.bedroom_rolling_hills" },
-  { id: "lucas_gn",     label: "🌙 Goodnight",     domain: "script", service: "turn_on",  entity: "script.lucas_bedtime" },
-  { id: "lobby",        label: "🔓 Lobby",         domain: "button", service: "press",    entity: "button.lobby_open_door" },
+  { id: "lounge_chill",  label: "🌅 Lounge Chill", domain: "scene",  service: "turn_on",  entity: "scene.lounge_rolling_hills" },
+  { id: "bed_hills",     label: "🌄 Bed Hills",     domain: "scene",  service: "turn_on",  entity: "scene.bedroom_rolling_hills" },
+  { id: "lounge_off",    label: "💡 Lounge Off",    domain: "light",  service: "turn_off", entity: "light.lounge", danger: true },
+  { id: "lucas_gn",      label: "🌙 Goodnight",     domain: "script", service: "turn_on",  entity: "script.lucas_bedtime" },
+  { id: "lobby",         label: "🔓 Lobby",         domain: "button", service: "press",    entity: "button.lobby_open_door" },
 ];
 
 const TOGGLES = [
   { entityId: "input_boolean.lucas_sleeping", label: "😴 Lucas Sleeping", domain: "input_boolean" },
-  { entityId: "light.lounge",                 label: "💡 Lounge",         domain: "light" },
   { entityId: "light.kitchen_spotlights",     label: "🍳 Kitchen",        domain: "light" },
   { entityId: "light.cloakroom_spotlights",   label: "🚿 Cloakroom",      domain: "light" },
-];
-
-const ALL_LIGHTS = [
-  { domain: "light", entity: "light.lounge" },
-  { domain: "light", entity: "light.kitchen_spotlights" },
-  { domain: "light", entity: "light.cloakroom_spotlights" },
 ];
 
 function isOn(s: string | undefined) { return s === "on" || s === "true"; }
@@ -145,16 +138,6 @@ export function SmartHomePanel() {
     await act(entityId, domain, service, entityId);
   }, [act]);
 
-  const allOff = useCallback(async () => {
-    setPending("all_off");
-    try {
-      await Promise.all(ALL_LIGHTS.map(({ domain, entity }) => callHA(domain, "turn_off", entity)));
-      queryClient.invalidateQueries({ queryKey: ["/api/ha/states"] });
-    } finally {
-      setPending(null);
-    }
-  }, []);
-
   return (
     <>
       {liveCamera && <CameraModal cam={liveCamera} onClose={() => setLiveCamera(null)} />}
@@ -182,22 +165,18 @@ export function SmartHomePanel() {
                 key={s.id}
                 disabled={pending === s.id}
                 onClick={() => act(s.id, s.domain, s.service, s.entity)}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all disabled:opacity-40 bg-muted/40 border-border/60 text-foreground hover:bg-muted/70"
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all disabled:opacity-40
+                  ${"danger" in s && s.danger
+                    ? "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                    : "bg-muted/40 border-border/60 text-foreground hover:bg-muted/70"
+                  }`}
               >
-                {pending === s.id ? <Loader2 className="w-3 h-3 animate-spin shrink-0" /> : null}
+                {pending === s.id
+                  ? <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                  : null}
                 {s.label}
               </button>
             ))}
-            {/* All Lights Off */}
-            <button
-              disabled={pending === "all_off"}
-              onClick={allOff}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all disabled:opacity-40 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
-              data-testid="button-all-off"
-            >
-              {pending === "all_off" ? <Loader2 className="w-3 h-3 animate-spin shrink-0" /> : null}
-              🌑 All Lights Off
-            </button>
           </div>
 
           {/* ── Toggles ──────────────────────────────────────────────────── */}
