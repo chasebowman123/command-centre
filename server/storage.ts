@@ -11,6 +11,44 @@ import { eq } from "drizzle-orm";
 
 const dbPath = process.env.DATABASE_URL || "data.db";
 const sqlite = new Database(dbPath);
+
+// Create tables on first run (fresh DB has no tables)
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS holdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticker TEXT NOT NULL,
+    name TEXT NOT NULL,
+    quantity REAL NOT NULL,
+    avg_price REAL NOT NULL,
+    asset_type TEXT NOT NULL DEFAULT 'stock'
+  );
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    completed INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS pension_funds (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    provider TEXT NOT NULL,
+    fund_name TEXT NOT NULL,
+    isin TEXT,
+    current_value REAL NOT NULL,
+    allocation REAL,
+    currency TEXT NOT NULL DEFAULT 'GBP'
+  );
+  CREATE TABLE IF NOT EXISTS properties (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    address TEXT NOT NULL,
+    postcode TEXT NOT NULL,
+    purchase_price REAL NOT NULL,
+    current_value REAL NOT NULL,
+    mortgage_balance REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'GBP'
+  );
+`);
+
 const db = drizzle(sqlite);
 
 export interface IStorage {
