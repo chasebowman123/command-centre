@@ -72,7 +72,7 @@ function getFavicon(url: string): string {
 
 export function KeyLinksPanel() {
   return (
-    <div className="panel-card p-4 flex flex-col" style={{ maxHeight: "calc(100vh - 160px)" }} data-testid="key-links-panel">
+    <div className="panel-card p-4 flex flex-col" style={{ maxHeight: "320px" }} data-testid="key-links-panel">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         Key Links
       </p>

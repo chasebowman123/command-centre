@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
 import { WeatherPanel } from "@/components/WeatherPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
-import { MiniCharts } from "@/components/MiniCharts";
+import { InteractiveCharts } from "@/components/InteractiveCharts";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SmartHomePanel } from "@/components/SmartHomePanel";
+import { QuickGmailPanel, QuickCalendarPanel } from "@/components/QuickPanels";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
 
@@ -20,29 +20,49 @@ const TABS = [
 
 type TabId = typeof TABS[number]["id"];
 
-// ── Sub-pages ────────────────────────────────────────────────────────────────
+// ── Home tab ─────────────────────────────────────────────────────────────────
 function HomeTab() {
   return (
     <main className="px-4 md:px-5 pb-4">
       <div className="max-w-[1800px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
 
-          {/* LEFT COLUMN */}
+          {/* ── LEFT COLUMN ───────────────────────────────────────────────── */}
           <div className="lg:col-span-9 space-y-4">
+
+            {/* Charts at top */}
+            <InteractiveCharts />
+
+            {/* Smart Home */}
             <SmartHomePanel />
+
+            {/* Weather */}
             <WeatherPanel />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CalendarPanel />
+
+            {/* Quick panels + Tasks */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <QuickGmailPanel />
+              <QuickCalendarPanel />
               <TasksPanel />
             </div>
-            <MiniCharts />
-            <TVShowsPanel />
+
           </div>
 
-          {/* RIGHT COLUMN — Key Links */}
+          {/* ── RIGHT COLUMN ──────────────────────────────────────────────── */}
           <div className="lg:col-span-3">
-            <div className="lg:sticky lg:top-4">
+            <div className="lg:sticky lg:top-4 flex flex-col gap-4">
+
+              {/* Key Links — capped height */}
               <KeyLinksPanel />
+
+              {/* TV Shows — fills remaining space, scrollable */}
+              <div
+                className="flex flex-col min-h-0"
+                style={{ maxHeight: "calc(100vh - 420px)", minHeight: "300px" }}
+              >
+                <TVShowsPanel />
+              </div>
+
             </div>
           </div>
 
@@ -53,6 +73,7 @@ function HomeTab() {
   );
 }
 
+// ── Iframe tab ────────────────────────────────────────────────────────────────
 function IframeTab({ src, title }: { src: string; title: string }) {
   return (
     <div className="flex-1 px-4 md:px-5 pb-4">
@@ -66,7 +87,7 @@ function IframeTab({ src, title }: { src: string; title: string }) {
   );
 }
 
-// ── Main dashboard shell ─────────────────────────────────────────────────────
+// ── Dashboard shell ───────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("home");
 
@@ -77,9 +98,7 @@ export default function Dashboard() {
 
       {/* Header */}
       <header className="px-4 md:px-6 py-3 flex items-center justify-between shrink-0">
-        <h1 className="text-lg md:text-xl font-bold tracking-tight">
-          Command Centre
-        </h1>
+        <h1 className="text-lg md:text-xl font-bold tracking-tight">Command Centre</h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-dot" />
