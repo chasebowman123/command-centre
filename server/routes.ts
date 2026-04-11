@@ -515,7 +515,20 @@ export async function registerRoutes(
       const allEvents: any[] = [];
       await Promise.all(urls.map(async (url) => {
         try {
-          const data = await ical.async.fromURL(url);
+          // Add timeout to prevent hanging on slow iCal fetches
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          let data: any;
+          try {
+            const resp = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeout);
+            const text = await resp.text();
+            data = ical.sync.parseICS(text);
+          } catch (fetchErr: any) {
+            clearTimeout(timeout);
+            console.error('iCal fetch/parse error:', fetchErr.message);
+            return;
+          }
           for (const [, ev] of Object.entries(data) as any[]) {
             if (ev.type !== "VEVENT") continue;
             const start = ev.start ? new Date(ev.start) : null;

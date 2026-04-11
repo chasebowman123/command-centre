@@ -4,10 +4,11 @@ import { TasksPanel } from "@/components/TasksPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
 import { HeaderWeather } from "@/components/HeaderWeather";
-import { MiniCharts } from "@/components/MiniCharts";
+import { ChartsPanel } from "@/components/ChartsPanel";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SmartHomePanel } from "@/components/SmartHomePanel";
+import { PerplexityPanel } from "@/components/PerplexityPanel";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut } from "lucide-react";
 
@@ -24,28 +25,29 @@ type TabId = typeof TABS[number]["id"];
 function HomeTab() {
   return (
     <main className="px-4 md:px-5 pb-4">
-      <div className="max-w-[1800px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      <div className="max-w-[1800px] mx-auto space-y-4">
 
-          {/* LEFT COLUMN */}
+        {/* Charts — full width at top */}
+        <ChartsPanel />
+
+        {/* Smart Home + Key Links side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
           <div className="lg:col-span-9 space-y-4">
             <SmartHomePanel />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <CalendarPanel />
               <TasksPanel />
             </div>
-            <MiniCharts />
             <TVShowsPanel />
+            <PerplexityPanel />
           </div>
-
-          {/* RIGHT COLUMN — Key Links */}
           <div className="lg:col-span-3">
             <div className="lg:sticky lg:top-4">
               <KeyLinksPanel />
             </div>
           </div>
-
         </div>
+
       </div>
       <div className="h-4" />
     </main>

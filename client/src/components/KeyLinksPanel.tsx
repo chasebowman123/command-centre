@@ -79,28 +79,27 @@ export function KeyLinksPanel() {
       <div className="flex-1 overflow-y-auto -mr-1 pr-1 space-y-3" style={{ minHeight: 0 }}>
         {LINK_GROUPS.map((group) => (
           <div key={group.category}>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1 px-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1 px-1">
               {group.category}
             </p>
-            <div className="space-y-0.5">
+            <div className="grid grid-cols-2 gap-x-1 gap-y-0">
               {group.links.map((link) => (
                 <a
                   key={link.url}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm hover:bg-muted/60 transition-colors group"
+                  className="flex items-center gap-1.5 px-1.5 py-1 rounded-md text-xs hover:bg-muted/60 transition-colors group"
                   data-testid={`link-${link.label.toLowerCase().replace(/\s/g, "-")}`}
                 >
                   <img
                     src={getFavicon(link.url)}
                     alt=""
-                    className="w-4 h-4 rounded-sm shrink-0"
+                    className="w-3.5 h-3.5 rounded-sm shrink-0"
                     loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                   <span className="truncate group-hover:text-primary transition-colors">{link.label}</span>
-                  <ExternalLink className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0" />
                 </a>
               ))}
             </div>

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Calendar, MapPin, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, AlertCircle } from "lucide-react";
 
 interface CalEvent {
   id: string;
@@ -45,15 +45,24 @@ export function CalendarPanel() {
   const { data, isLoading, error } = useQuery<{ events: CalEvent[]; error?: string }>({
     queryKey: ["/api/calendar"],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/calendar");
-      return res.json();
+      try {
+        const res = await apiRequest("GET", "/api/calendar");
+        return res.json();
+      } catch (e: any) {
+        // If it's a 401 (not authenticated), return a specific error
+        if (e.message?.includes("401")) {
+          return { events: [], error: "Not authenticated" };
+        }
+        return { events: [], error: e.message || "Failed to load calendar" };
+      }
     },
     staleTime: 120000,
     refetchInterval: 120000,
     retry: false,
   });
 
-  const notConfigured = !isLoading && (data?.error === "GCAL_ICAL_URL not set" || error);
+  const notConfigured = !isLoading && data?.error === "GCAL_ICAL_URL not set";
+  const hasError = !isLoading && data?.error && data.error !== "GCAL_ICAL_URL not set";
   const groups = data?.events ? groupByDay(data.events) : [];
 
   return (
@@ -100,11 +109,19 @@ export function CalendarPanel() {
           </div>
         )}
 
-        {!isLoading && !notConfigured && groups.length === 0 && (
+        {hasError && (
+          <div className="flex flex-col items-center justify-center gap-2 h-full min-h-[160px]">
+            <AlertCircle className="w-6 h-6 text-muted-foreground/30" />
+            <p className="text-xs text-muted-foreground text-center">Could not load calendar</p>
+            <p className="text-[10px] text-muted-foreground/50 text-center max-w-[200px]">{data?.error}</p>
+          </div>
+        )}
+
+        {!isLoading && !notConfigured && !hasError && groups.length === 0 && (
           <p className="text-sm text-muted-foreground py-4 text-center">No upcoming events</p>
         )}
 
-        {!isLoading && !notConfigured && groups.length > 0 && (
+        {!isLoading && !notConfigured && !hasError && groups.length > 0 && (
           <div className="space-y-3">
             {groups.map((group) => (
               <div key={group.date}>
