@@ -2,8 +2,8 @@ import { useState } from "react";
 import { CalendarPanel } from "@/components/CalendarPanel";
 import { TasksPanel } from "@/components/TasksPanel";
 import { TVShowsPanel } from "@/components/TVShowsPanel";
-import { WeatherPanel } from "@/components/WeatherPanel";
 import { KeyLinksPanel } from "@/components/KeyLinksPanel";
+import { HeaderWeather } from "@/components/HeaderWeather";
 import { MiniCharts } from "@/components/MiniCharts";
 import { MarketTicker } from "@/components/MarketTicker";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -30,7 +30,6 @@ function HomeTab() {
           {/* LEFT COLUMN */}
           <div className="lg:col-span-9 space-y-4">
             <SmartHomePanel />
-            <WeatherPanel />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <CalendarPanel />
               <TasksPanel />
@@ -80,6 +79,12 @@ export default function Dashboard() {
         <h1 className="text-lg md:text-xl font-bold tracking-tight">
           Command Centre
         </h1>
+
+        {/* Weather — inline in header */}
+        <div className="hidden md:block">
+          <HeaderWeather />
+        </div>
+
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-dot" />
